@@ -7,8 +7,8 @@ compatibility_date = "2024-01-01"
 binding = "UPTIME_KV"
 id = "aac627cdffab4c5eb16182d6b07bb32c"
 
-# Cron trigger: every 5 minutes
+# Cron trigger: every 30 minutes
 [triggers]
-crons = ["*/10 * * * *"]
+crons = ["*/30 * * * *"]
 
 # For local dev, use .dev.vars for secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
