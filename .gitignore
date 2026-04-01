@@ -3,3 +3,5 @@ node_modules/
 src/uptime.test.js
 debug.json
 debug_status.json
+assets/lighthouse.base64
+inject_favicon.js
