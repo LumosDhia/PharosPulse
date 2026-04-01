@@ -2,8 +2,6 @@
 
 **PharosPulse** is a professional, high-performance serverless uptime monitoring dashboard built to run at the edge using Cloudflare Workers. It provides real-time health tracking, historical availability data (365-day view), and instant Telegram alerting with a sleek, modern UI based on the Catppuccin Mocha color palette.
 
-![PharosPulse Dashbaord Preview](assets/lighthouse.png)
-
 ## 🚀 Features
 
 - **Serverless Execution**: Powered by Cloudflare Workers for near-zero cost and global distribution.

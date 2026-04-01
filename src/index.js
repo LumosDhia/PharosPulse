@@ -442,9 +442,34 @@ function renderDashboard(results, lastCheck) {
     }
     .nav-logo-name { font-weight: 700; font-size: 0.95rem; color: #cdd6f4; line-height: 1.2; }
     .nav-logo-sub  { font-size: 0.68rem; color: #a6adc8; }
-    .nav-links { display: flex; gap: 1.5rem; }
-    .nav-links a { color: #a6adc8; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: #a6adc8; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; display: flex; align-items: center; gap: 0.5rem; }
     .nav-links a:hover { color: #cdd6f4; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 1rem; height: 50px; }
+      .nav-logo-sub { display: none; }
+      .nav-logo-name { font-size: 0.85rem; }
+      .nav-links { gap: 0.75rem; }
+      .nav-links a { font-size: 0.75rem; }
+      
+      .controls { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+      .control-label { display: none; }
+      
+      .page-header { margin-bottom: 1.25rem; }
+      .page-title { font-size: 1.5rem; }
+      .page-subtitle { font-size: 0.8rem; }
+      
+      main { padding: 1rem; }
+      .grid { gap: 0.75rem; }
+      .card { padding: 1rem; }
+      .metrics { gap: 0.75rem; justify-content: space-between; }
+      .metric-value { font-size: 1rem; }
+      .chart-tabs { flex-wrap: wrap; }
+      
+      footer { flex-direction: column; gap: 0.75rem; text-align: center; padding: 1.5rem 1rem; }
+      .footer-left { justify-content: center; }
+    }
 
     main { flex: 1; padding: 2rem; max-width: 1200px; width: 100%; margin: 0 auto; }
 
@@ -455,7 +480,16 @@ function renderDashboard(results, lastCheck) {
     .controls { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; }
 
     .search-wrap { position: relative; flex: 1; }
-    .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #a6adc8; font-size: 0.8rem; pointer-events: none; }
+    .search-icon { 
+      position: absolute; 
+      left: 0.85rem; 
+      top: 50%; 
+      transform: translateY(-50%); 
+      color: #7f849c; 
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
     .search-wrap input {
       width: 100%;
       background: #181825;
@@ -611,7 +645,12 @@ function renderDashboard(results, lastCheck) {
 
     <div class="controls">
       <div class="search-wrap">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
         <input id="search" type="text" placeholder="Search endpoints..." oninput="filterCards()"/>
       </div>
       <span class="control-label">Filter by:</span>
