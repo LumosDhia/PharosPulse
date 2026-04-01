@@ -1,0 +1,14 @@
+{
+  "name": "uptime-lumosdhia",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker uptime monitor for uptime.lumosdhia.com",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "kv:create": "npx wrangler kv:namespace create UPTIME_KV"
+  },
+  "devDependencies": {
+    "wrangler": "^4.79.0"
+  }
+}
