@@ -1,2 +1,5 @@
 .dev.vars
 node_modules/
+src/uptime.test.js
+debug.json
+debug_status.json

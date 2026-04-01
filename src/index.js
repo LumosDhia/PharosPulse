@@ -3,6 +3,37 @@
 // Monitors your VPS and serves a live status dashboard
 // ====================================================
 
+// ——— Pure calculation helpers (also tested in src/uptime.test.js) ———
+
+/**
+ * Today's availability % from daily history. Returns null if no data yet.
+ */
+function computeTodayAvailability(daily, todayStr) {
+  if (!daily || !daily[todayStr]) return null;
+  const { up, total } = daily[todayStr];
+  if (total === 0) return null;
+  return parseFloat(((up / total) * 100).toFixed(2));
+}
+
+/**
+ * All-time availability % by summing every day in history.
+ * Derived entirely from daily history — no dependency on UPTIME_STATS.
+ * Returns null if no history at all.
+ */
+function computeAllTimeAvailability(daily) {
+  if (!daily || typeof daily !== "object") return null;
+  let totalUp = 0;
+  let totalChecks = 0;
+  for (const day of Object.values(daily)) {
+    if (day && typeof day.up === "number" && typeof day.total === "number") {
+      totalUp += day.up;
+      totalChecks += day.total;
+    }
+  }
+  if (totalChecks === 0) return null;
+  return parseFloat(((totalUp / totalChecks) * 100).toFixed(2));
+}
+
 // The list of services to check
 const SERVICES = [
   { name: "Main Portfolio", url: "https://lumosdhia.com", group: "Core" },
@@ -41,12 +72,12 @@ async function runChecks(env, shouldAlert = false) {
     const latency = Date.now() - start;
     
     // Update total historical stats
-    if (!stats[service.name]) stats[service.name] = { total: 0, up: 0 };
+    if (!stats[service.name] || Array.isArray(stats[service.name])) stats[service.name] = { total: 0, up: 0 };
     stats[service.name].total += 1;
     if (status === "UP") stats[service.name].up += 1;
 
     // Update 90-day DAILY history
-    if (!history[service.name]) history[service.name] = {};
+    if (!history[service.name] || Array.isArray(history[service.name])) history[service.name] = {};
     if (!history[service.name][today]) history[service.name][today] = { total: 0, up: 0 };
     
     history[service.name][today].total += 1;
@@ -64,8 +95,9 @@ async function runChecks(env, shouldAlert = false) {
       status, 
       statusCode, 
       latency,
-      uptime: ((stats[service.name].up / stats[service.name].total) * 100).toFixed(2),
       daily: history[service.name]
+      // NOTE: uptime percentages are computed at render time from `daily`
+      // using computeTodayAvailability() and computeAllTimeAvailability()
     });
   }
 
@@ -135,16 +167,12 @@ function renderDashboard(results, lastCheck) {
       const badgeClass = isUp ? "badge-up" : "badge-down";
       const badgeText = isUp ? "● Healthy" : "● Unhealthy";
 
-      // Compute Today's Availability
+      // Compute availabilities using pure, tested functions
       const todayStr = new Date().toISOString().split("T")[0];
-      let todayUp = 0;
-      let todayTotal = 0;
-      if (r.daily && r.daily[todayStr]) {
-        todayUp = r.daily[todayStr].up;
-        todayTotal = r.daily[todayStr].total;
-      }
-      let todayAvail = todayTotal > 0 ? ((todayUp / todayTotal) * 100).toFixed(2) : "100.00";
-      todayAvail = parseFloat(todayAvail);
+      const todayAvail = computeTodayAvailability(r.daily, todayStr);
+      const allTimeAvail = computeAllTimeAvailability(r.daily);
+
+      const fmtPct = (v) => v === null ? "—" : v.toFixed(1) + "%";
 
       // Generate history bars
       const generateBars = (daysCount) => {
@@ -215,11 +243,11 @@ function renderDashboard(results, lastCheck) {
         
         <div class="metrics">
           <div class="metric">
-            <span class="metric-value">${todayAvail}%</span>
+            <span class="metric-value">${fmtPct(todayAvail)}</span>
             <span class="metric-title">Today</span>
           </div>
           <div class="metric">
-            <span class="metric-value">${parseFloat(r.uptime)}%</span>
+            <span class="metric-value">${fmtPct(allTimeAvail)}</span>
             <span class="metric-title">All-Time</span>
           </div>
         </div>
@@ -251,7 +279,7 @@ function renderDashboard(results, lastCheck) {
 
         <div class="info-row" style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #a6adc8; margin-top: 0.5rem;">
           <span>Latency: ~${r.latency}ms</span>
-          <span>Checked ${timeSince}</span>
+          <span class="time-relative" data-time="${lastCheck || ''}">Checked ${timeSince}</span>
         </div>
       </div>`;
     })
@@ -267,15 +295,45 @@ function renderDashboard(results, lastCheck) {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script>
-    function scheduleNextRefresh() {
-      var now = new Date();
-      var minutes = now.getMinutes();
-      var seconds = now.getSeconds();
-      var nextCheckMin = Math.ceil((minutes + 0.1) / 5) * 5;
-      var delayMs = ((nextCheckMin - minutes) * 60 - seconds + 8) * 1000;
-      setTimeout(function() { location.reload(); }, delayMs);
+    function updateTimes() {
+      var lastCheckEl = document.getElementById("last-check-time");
+      if (lastCheckEl && lastCheckEl.dataset.time) {
+        var date = new Date(lastCheckEl.dataset.time);
+        lastCheckEl.textContent = date.toLocaleString(navigator.language || "en-GB", { dateStyle: "medium", timeStyle: "short" });
+      }
+
+      var relatives = document.querySelectorAll(".time-relative");
+      relatives.forEach(function(el) {
+        var t = el.dataset.time;
+        if (!t) return;
+        var diff = Math.floor((Date.now() - new Date(t)) / 1000);
+        var txt = "Checked ";
+        if (diff < 60) txt += diff + "s ago";
+        else if (diff < 3600) txt += Math.floor(diff / 60) + "m ago";
+        else txt += Math.floor(diff / 3600) + "h ago";
+        el.textContent = txt;
+      });
     }
-    window.onload = scheduleNextRefresh;
+
+    function setupAutoRefresh() {
+      var now = new Date();
+      var m = now.getMinutes();
+      var nextM = Math.ceil((m + 0.1) / 5) * 5;
+      
+      var targetTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), nextM, 10);
+      
+      setInterval(function() {
+        if (new Date() >= targetTime) {
+          location.reload();
+        }
+        updateTimes();
+      }, 1000);
+      
+      // Update immediately on page load
+      updateTimes();
+    }
+
+    document.addEventListener("DOMContentLoaded", setupAutoRefresh);
 
     function filterCards() {
       var q = document.getElementById('search').value.toLowerCase();
@@ -533,7 +591,7 @@ function renderDashboard(results, lastCheck) {
   <main>
     <div class="page-header">
       <h1 class="page-title">Health Dashboard</h1>
-      <p class="page-subtitle">Monitor the health of your endpoints in real-time · Last checked: ${formattedTime}</p>
+      <p class="page-subtitle">Monitor the health of your endpoints in real-time · Last checked: <span id="last-check-time" data-time="${lastCheck || ''}">${formattedTime}</span></p>
     </div>
 
     <div class="controls">
