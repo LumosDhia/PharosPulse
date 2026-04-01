@@ -1,6 +1,6 @@
 # PharosPulse 🏮
 
-**PharosPulse** is a professional, high-performance serverless uptime monitoring dashboard built to run at the edge using Cloudflare Workers. It provides real-time health tracking, historical availability data (90-day view), and instant Telegram alerting with a sleek, modern UI based on the Catppuccin Mocha color palette.
+**PharosPulse** is a professional, high-performance serverless uptime monitoring dashboard built to run at the edge using Cloudflare Workers. It provides real-time health tracking, historical availability data (365-day view), and instant Telegram alerting with a sleek, modern UI based on the Catppuccin Mocha color palette.
 
 ![PharosPulse Dashbaord Preview](assets/lighthouse.png)
 
@@ -61,8 +61,13 @@ To use your own domain (e.g., `status.yourdomain.com`):
 3. Under **Custom Domains**, click **Add Custom Domain**.
 4. Enter the subdomain you want to use and follow the DNS verification steps.
 
-## High Precision Monitoring
-PharosPulse uses a 5-minute cron check interval and a robust client-side precision timer to ensure the dashboard remains accurate even if the browser background tab is throttled.
+## ⏰ Monitoring Intervals
+By default, PharosPulse is configured with a **30-minute cron interval** (`*/30 * * * *` in `wrangler.toml`). 
+
+- **Free Tier Optimized**: This setting is designed to stay well within the Cloudflare Workers KV free tier (1,000 daily writes).
+- **Critical Infrastructure**: For mission-critical endpoints, it is highly recommended to change the interval to **5 minutes** (`*/5 * * * *`), which is the industry standard for high-precision monitoring. This will ensure faster incident detection but may exceed the 1,000 daily write limit if monitoring many services.
+
+PharosPulse uses a robust client-side precision timer to ensure the dashboard remains accurate even if the browser background tab is throttled.
 
 ## 📝 License
 This project is open-source and available under the [MIT License](LICENSE).

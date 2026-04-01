@@ -43,9 +43,8 @@ const SERVICES = [
 // ——— CRON: Runs every 5 minutes ———
 async function runChecks(env, shouldAlert = false) {
   const results = [];
-  
-  // Get historical stats from KV with safety fallback to separate keys
-  const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA_V1");
+  // Get historical stats from consolidated KV store
+  const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA");
   let stats = {};
   let history = {};
   
@@ -53,12 +52,6 @@ async function runChecks(env, shouldAlert = false) {
     const data = JSON.parse(dataRaw);
     stats = data.stats || {};
     history = data.history || {};
-  } else {
-    // Migration fallback for old setup
-    let statsData = await env.UPTIME_KV.get("UPTIME_STATS");
-    let historyData = await env.UPTIME_KV.get("UPTIME_HISTORY");
-    stats = statsData ? JSON.parse(statsData) : {};
-    history = historyData ? JSON.parse(historyData) : {};
   }
 
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -86,7 +79,7 @@ async function runChecks(env, shouldAlert = false) {
     stats[service.name].total += 1;
     if (status === "UP") stats[service.name].up += 1;
 
-    // Update 90-day DAILY history
+    // Update 365-day DAILY history
     if (!history[service.name] || Array.isArray(history[service.name])) history[service.name] = {};
     if (!history[service.name][today]) history[service.name][today] = { total: 0, up: 0 };
     
@@ -106,16 +99,14 @@ async function runChecks(env, shouldAlert = false) {
       statusCode, 
       latency,
       daily: history[service.name]
-      // NOTE: uptime percentages are computed at render time from `daily`
-      // using computeTodayAvailability() and computeAllTimeAvailability()
     });
   }
 
-  // CONSOLIDATED WRITE: Save everything in one key to reduce KV usage metrics
+  // CONSOLIDATED WRITE: Save everything in one key
   if (results.length > 0) {
     const timestamp = new Date().toISOString();
     const payload = { results, stats, history, lastCheck: timestamp };
-    await env.UPTIME_KV.put("UPTIME_DATA_V1", JSON.stringify(payload));
+    await env.UPTIME_KV.put("UPTIME_DATA", JSON.stringify(payload));
   }
 
   // Alert on Telegram if any service is DOWN AND shouldAlert is TRUE
@@ -664,15 +655,9 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Optimized loading function
     const getData = async () => {
-      const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA_V1");
-      if (dataRaw) return JSON.parse(dataRaw);
-      
-      // Fallback for legacy keys
-      const results = JSON.parse(await env.UPTIME_KV.get("RESULTS") || "[]");
-      const lastCheck = await env.UPTIME_KV.get("LAST_CHECK");
-      return { results, lastCheck };
+      const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA");
+      return dataRaw ? JSON.parse(dataRaw) : { results: [], lastCheck: null };
     };
 
     // JSON API endpoint

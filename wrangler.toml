@@ -5,7 +5,7 @@ compatibility_date = "2024-01-01"
 # KV Namespace — run `npx wrangler kv:namespace create UPTIME_KV` and paste the ID below
 [[kv_namespaces]]
 binding = "UPTIME_KV"
-id = "aac627cdffab4c5eb16182d6b07bb32c"
+id = "3e2335bff5254fbba04b2f428303f935"
 
 # Cron trigger: every 30 minutes
 [triggers]
