@@ -44,12 +44,22 @@ const SERVICES = [
 async function runChecks(env, shouldAlert = false) {
   const results = [];
   
-  // Get historical stats from KV with safety fallback
-  let statsData = await env.UPTIME_KV.get("UPTIME_STATS");
-  let historyData = await env.UPTIME_KV.get("UPTIME_HISTORY");
+  // Get historical stats from KV with safety fallback to separate keys
+  const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA_V1");
+  let stats = {};
+  let history = {};
   
-  let stats = statsData ? JSON.parse(statsData) : {};
-  let history = historyData ? JSON.parse(historyData) : {};
+  if (dataRaw) {
+    const data = JSON.parse(dataRaw);
+    stats = data.stats || {};
+    history = data.history || {};
+  } else {
+    // Migration fallback for old setup
+    let statsData = await env.UPTIME_KV.get("UPTIME_STATS");
+    let historyData = await env.UPTIME_KV.get("UPTIME_HISTORY");
+    stats = statsData ? JSON.parse(statsData) : {};
+    history = historyData ? JSON.parse(historyData) : {};
+  }
 
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
@@ -101,13 +111,11 @@ async function runChecks(env, shouldAlert = false) {
     });
   }
 
-  // Ensure we have data before saving back to KV
+  // CONSOLIDATED WRITE: Save everything in one key to reduce KV usage metrics
   if (results.length > 0) {
     const timestamp = new Date().toISOString();
-    await env.UPTIME_KV.put("RESULTS", JSON.stringify(results));
-    await env.UPTIME_KV.put("LAST_CHECK", timestamp);
-    await env.UPTIME_KV.put("UPTIME_STATS", JSON.stringify(stats));
-    await env.UPTIME_KV.put("UPTIME_HISTORY", JSON.stringify(history));
+    const payload = { results, stats, history, lastCheck: timestamp };
+    await env.UPTIME_KV.put("UPTIME_DATA_V1", JSON.stringify(payload));
   }
 
   // Alert on Telegram if any service is DOWN AND shouldAlert is TRUE
@@ -430,14 +438,16 @@ function renderDashboard(results, lastCheck) {
 
     .nav-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
     .nav-logo-icon {
-      background: #cba6f7;
-      color: #1e1e2e;
-      font-weight: 800;
-      font-size: 0.85rem;
+      background: transparent;
       width: 34px; height: 34px;
       border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      letter-spacing: -1px;
+      overflow: hidden;
+    }
+    .nav-logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
     .nav-logo-name { font-weight: 700; font-size: 0.95rem; color: #cdd6f4; line-height: 1.2; }
     .nav-logo-sub  { font-size: 0.68rem; color: #a6adc8; }
@@ -578,10 +588,12 @@ function renderDashboard(results, lastCheck) {
 <body>
   <nav>
     <a class="nav-logo" href="/">
-      <div class="nav-logo-icon">MD</div>
+      <div class="nav-logo-icon">
+        <img src="data:image/png;base64,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WCRjR2lzaWduYXR1cmV4GXNlbGYjanVtYmY9YzJwYS5zaWduYXR1cmVjYWxnZnNoYTI1NgAAAlFqdW1iAAAAKWp1bWRjMmFzABEAEIAAAKoAOJtxA2MycGEuYXNzZXJ0aW9ucwAAAACcanVtYgAAAChqdW1kY2JvcgARABCAAACqADibcQNjMnBhLmhhc2guZGF0YAAAABsY2JvcqRqZXhjbHVzaW9uc4GiZXN0YXJ0FGZsZW5ndGgZF4ljYWxnZnNoYTI1NmRoYXNoWCDPEzySdc8GcMIsgIUwDxljXhsq2R1knhzq1VjCpDo7DGNwYWROAAAAAAAAAAAAAAAAAAAAAAGEanVtYgAAAClqdW1kY2JvcgARABCAAACqADibcQNjMnBhLmFjdGlvbnMudjIAAAABU2Nib3KhZ2FjdGlvbnOCo2ZhY3Rpb25sYzJwYS5jcmVhdGVka2Rlc2NyaXB0aW9ueCBDcmVhdGVkIGJ5IEdvb2dsZSBHZW5lcmF0aXZlIEFJLnFkaWdpdGFsU291cmNlVHlwZXhGaHR0cDovL2N2LmlwdGMub3JnL25ld3Njb2Rlcy9kaWdpdGFsc291cmNldHlwZS90cmFpbmVkQWxnb3JpdGhtaWNNZWRpYaNmYWN0aW9ua2MycGEuZWRpdGVka2Rlc2NyaXB0aW9ueChBcHBsaWVkIGltcGVyY2VwdGlibGUgU3ludGhJRCB3YXRlcm1hcmsucWRpZ2l0YWxTb3VyY2VUeXBleEZodHRwOi8vY3YuaXB0Yy5vcmcvbmV3c2NvZGVzL2RpZ2l0YWxzb3VyY2V0eXBlL3RyYWluZWRBbGdvcml0aG1pY01lZGlh" alt="PharosPulse Logo">
+      </div>
       <div>
         <div class="nav-logo-name">LumosDhia</div>
-        <div class="nav-logo-sub">Uptime Monitor</div>
+        <div class="nav-logo-sub">PharosPulse — an uptime monitor</div>
       </div>
     </a>
     <div class="nav-links">
@@ -645,24 +657,31 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // JSON API endpoint for programmatic access
-    if (url.pathname === "/api/status") {
+    // Optimized loading function
+    const getData = async () => {
+      const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA_V1");
+      if (dataRaw) return JSON.parse(dataRaw);
+      
+      // Fallback for legacy keys
       const results = JSON.parse(await env.UPTIME_KV.get("RESULTS") || "[]");
       const lastCheck = await env.UPTIME_KV.get("LAST_CHECK");
-      return new Response(JSON.stringify({ results, lastCheck }), {
+      return { results, lastCheck };
+    };
+
+    // JSON API endpoint
+    if (url.pathname === "/api/status") {
+      const data = await getData();
+      return new Response(JSON.stringify({ results: data.results, lastCheck: data.lastCheck }), {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    // For local testing: run the check immediately and show the result
     if (url.pathname === "/test") {
-      await runChecks(env, false); // FALSE = Do NOT send alerts on refresh
+      await runChecks(env, false);
     }
 
-    // Serve the HTML dashboard
-    const results = JSON.parse(await env.UPTIME_KV.get("RESULTS") || "[]");
-    const lastCheck = await env.UPTIME_KV.get("LAST_CHECK");
-    return new Response(renderDashboard(results, lastCheck), {
+    const data = await getData();
+    return new Response(renderDashboard(data.results || [], data.lastCheck), {
       headers: { "Content-Type": "text/html;charset=UTF-8" },
     });
   },

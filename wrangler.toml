@@ -9,6 +9,6 @@ id = "aac627cdffab4c5eb16182d6b07bb32c"
 
 # Cron trigger: every 5 minutes
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/10 * * * *"]
 
 # For local dev, use .dev.vars for secrets (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
