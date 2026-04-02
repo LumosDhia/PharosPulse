@@ -715,6 +715,13 @@ export default {
       });
     }
 
+    // robots.txt fix
+    if (url.pathname === "/robots.txt") {
+      return new Response("User-agent: *\nAllow: /", {
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
     if (url.pathname === "/test") {
       await runChecks(env, false);
     }
