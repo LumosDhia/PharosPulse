@@ -681,7 +681,7 @@ function renderDashboard(results, lastCheck) {
       <div class="footer-dot"></div>
       <span>${overallUp ? "All systems operational" : "Incident detected"}</span>
     </div>
-    <span>Powered by <a href="https://workers.cloudflare.com/">Cloudflare Workers</a></span>
+    <span>© 2026 <a href="https://lumosdhia.com">lumosdhia.com</a> · Licensed under <a href="https://github.com/LumosDhia/PharosPulse/blob/main/LICENSE" target="_blank">MIT</a></span>
   </footer>
 </body>
 </html>`;
