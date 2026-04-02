@@ -37,7 +37,7 @@ function computeAllTimeAvailability(daily) {
 // The list of services to check
 const SERVICES = [
   { name: "Main Portfolio", url: "https://lumosdhia.com", group: "Core" },
-  { name: "EcoSpot App",    url: "https://ecospot.lumosdhia.com", group: "Apps" },
+  { name: "EcoSpot App", url: "https://ecospot.lumosdhia.com", group: "Apps" },
 ];
 
 // ——— CRON: Runs every 5 minutes ———
@@ -47,7 +47,7 @@ async function runChecks(env, shouldAlert = false) {
   const dataRaw = await env.UPTIME_KV.get("UPTIME_DATA");
   let stats = {};
   let history = {};
-  
+
   if (dataRaw) {
     const data = JSON.parse(dataRaw);
     stats = data.stats || {};
@@ -73,7 +73,7 @@ async function runChecks(env, shouldAlert = false) {
     }
 
     const latency = Date.now() - start;
-    
+
     // Update total historical stats
     if (!stats[service.name] || Array.isArray(stats[service.name])) stats[service.name] = { total: 0, up: 0 };
     stats[service.name].total += 1;
@@ -82,7 +82,7 @@ async function runChecks(env, shouldAlert = false) {
     // Update 365-day DAILY history
     if (!history[service.name] || Array.isArray(history[service.name])) history[service.name] = {};
     if (!history[service.name][today]) history[service.name][today] = { total: 0, up: 0 };
-    
+
     history[service.name][today].total += 1;
     if (status === "UP") history[service.name][today].up += 1;
 
@@ -92,11 +92,11 @@ async function runChecks(env, shouldAlert = false) {
       delete history[service.name][dates.shift()];
     }
 
-    results.push({ 
-      name: service.name, 
-      url: service.url, 
-      status, 
-      statusCode, 
+    results.push({
+      name: service.name,
+      url: service.url,
+      status,
+      statusCode,
       latency,
       daily: history[service.name]
     });
@@ -217,11 +217,11 @@ function renderDashboard(results, lastCheck) {
       // Time since last check
       const timeSince = lastCheck
         ? (() => {
-            const diff = Math.floor((Date.now() - new Date(lastCheck)) / 1000);
-            if (diff < 60) return diff + "s ago";
-            if (diff < 3600) return Math.floor(diff / 60) + "m ago";
-            return Math.floor(diff / 3600) + "h ago";
-          })()
+          const diff = Math.floor((Date.now() - new Date(lastCheck)) / 1000);
+          if (diff < 60) return diff + "s ago";
+          if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+          return Math.floor(diff / 3600) + "h ago";
+        })()
         : "never";
 
       const safeId = r.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
@@ -681,7 +681,7 @@ function renderDashboard(results, lastCheck) {
       <div class="footer-dot"></div>
       <span>${overallUp ? "All systems operational" : "Incident detected"}</span>
     </div>
-    <span>© 2026 <a href="https://lumosdhia.com">lumosdhia.com</a> · Licensed under <a href="https://github.com/LumosDhia/PharosPulse/blob/main/LICENSE" target="_blank">MIT</a></span>
+    <span>© 2026 <a href="https://lumosdhia.com">lumosdhia.com</a></span>
   </footer>
 </body>
 </html>`;
