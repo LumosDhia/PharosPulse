@@ -559,7 +559,7 @@ function renderDashboard(results, lastCheck) {
       flex-shrink: 0;
     }
     .badge-up   { background: rgba(166,227,161,0.12);  color: #a6e3a1; border: 1px solid rgba(166,227,161,0.3); }
-    .badge-down { background: rgba(243,139,168,0.12);  color: #f38ba8; border: 1px solid rgba(243,139,168,0.3); }
+    .badge-down { background: rgba(255,126,182,0.15);  color: #ffb1d1; border: 1px solid rgba(255,126,182,0.4); }
 
     /* Card Metrics */
     .metrics { display: flex; gap: 1.5rem; margin-top: 0.8rem; }
@@ -655,16 +655,16 @@ function renderDashboard(results, lastCheck) {
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </span>
-        <input id="search" type="text" placeholder="Search endpoints..." oninput="filterCards()"/>
+        <input id="search" type="text" placeholder="Search endpoints..." oninput="filterCards()" aria-label="Search status cards"/>
       </div>
-      <span class="control-label">Filter by:</span>
+      <label class="control-label" for="filter">Filter by:</label>
       <select id="filter" onchange="filterCards()">
         <option value="none">None</option>
         <option value="failing">Failing</option>
         <option value="unstable">Unstable</option>
       </select>
       
-      <span class="control-label" style="margin-left: 0.5rem;">Sort by:</span>
+      <label class="control-label" for="sort" style="margin-left: 0.5rem;">Sort by:</label>
       <div style="display: flex; gap: 0.25rem;">
         <select id="sort" onchange="sortCards()">
           <option value="health" selected>Health</option>
